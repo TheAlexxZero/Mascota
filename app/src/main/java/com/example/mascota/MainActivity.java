@@ -3,7 +3,9 @@ package com.example.mascota;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -13,7 +15,9 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     // Declaración de variables
     private FirebaseFirestore db; // Instancia de Firestore
     private EditText etCodigo, etNombreMascota, etNombreDueno, etDireccion; // Campos del formulario
+    private ListView listaMascotas; // ListView para mostrar los datos
 
     @SuppressLint("MissingInflatedId")
     @Override
@@ -45,6 +50,9 @@ public class MainActivity extends AppCompatActivity {
         etNombreMascota = findViewById(R.id.txtNombreMascota);
         etNombreDueno = findViewById(R.id.txtNombreDuenio);
         etDireccion = findViewById(R.id.txtDireccion);
+
+        // Vincular el ListView
+        listaMascotas = findViewById(R.id.lista);
     }
 
     // Método para enviar los datos a Firestore
@@ -83,4 +91,42 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "Error al enviar datos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
+
+    // Método para cargar los datos desde Firestore
+    public void CargarLista(View view) {
+        // Lista para almacenar los datos obtenidos
+        ArrayList<String> listaDatos = new ArrayList<>();
+
+        // Consultar Firestore
+        db.collection("mascotas")
+                .get()
+                .addOnSuccessListener(queryDocumentSnapshots -> {
+                    // Recorrer los documentos obtenidos
+                    for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
+                        String codigo = document.getString("codigo");
+                        String nombreMascota = document.getString("nombreMascota");
+                        String nombreDueno = document.getString("nombreDueno");
+                        String direccion = document.getString("direccion");
+
+                        // Formatear los datos y agregarlos a la lista
+                        listaDatos.add("Código: " + codigo + "\nMascota: " + nombreMascota +
+                                "\nDueño: " + nombreDueno + "\nDirección: " + direccion);
+                    }
+
+                    // Crear un adaptador y vincularlo al ListView
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                            this, android.R.layout.simple_list_item_1, listaDatos
+                    );
+                    listaMascotas.setAdapter(adapter);
+
+                    // Mostrar un mensaje si no hay datos
+                    if (listaDatos.isEmpty()) {
+                        Toast.makeText(this, "No hay datos para mostrar", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    Toast.makeText(this, "Error al cargar datos: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
+    }
 }
+
